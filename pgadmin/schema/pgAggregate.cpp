@@ -16,6 +16,7 @@
 #include "pgAdmin3.h"
 #include "utils/misc.h"
 #include "schema/pgAggregate.h"
+#include "utils/pgTypeCache.h"
 
 
 pgAggregate::pgAggregate(pgSchema *newSchema, const wxString &newName)
@@ -227,15 +228,9 @@ pgObject *pgAggregateFactory::CreateObjects(pgCollection *collection, ctlTree *b
 {
 	pgAggregate *aggregate = 0;
 
-	// Build a cache of data types
-	pgSet *types = collection->GetDatabase()->ExecuteSet(wxT(
-	                   "SELECT oid, format_type(oid, typtypmod) AS typname FROM pg_type"));
-	cacheMap map;
-	while(!types->Eof())
-	{
-		map[types->GetVal(wxT("oid"))] = types->GetVal(wxT("typname"));
-		types->MoveNext();
-	}
+	// Make sure the cache of data types is loaded
+	pgTypeCache *typeCache = collection->GetConnection()->GetTypeCache();
+	typeCache->PreCache();
 
 	// Build the query to get all objects
 	wxString sql =
@@ -303,11 +298,12 @@ pgObject *pgAggregateFactory::CreateObjects(pgCollection *collection, ctlTree *b
 				{
 					// Add the arg type. This is a type oid, so
 					// look it up in the hashmap
-					wxString type = argTypes.GetNextToken();
-					if (map[type] == wxT("any"))
+					OID type = StrToOid(argTypes.GetNextToken());
+					wxString name = typeCache->GetDefaultFullTypeName(type);
+					if (name == wxT("any"))
 						aggregate->iAddInputType(wxT("\"any\""));
 					else
-						aggregate->iAddInputType(qtTypeIdent(map[type]));
+						aggregate->iAddInputType(qtTypeIdent(name));
 				}
 			}
 
@@ -358,7 +354,6 @@ pgObject *pgAggregateFactory::CreateObjects(pgCollection *collection, ctlTree *b
 		}
 
 		delete aggregates;
-		delete types;
 	}
 	return aggregate;
 }

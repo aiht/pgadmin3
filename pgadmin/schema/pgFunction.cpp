@@ -21,6 +21,7 @@
 #include "frm/frmMain.h"
 #include "frm/frmReport.h"
 #include "frm/frmHint.h"
+#include "utils/pgTypeCache.h"
 
 pgFunction::pgFunction(pgSchema *newSchema, const wxString &newName)
 	: pgSchemaObject(newSchema, functionFactory, newName)
@@ -630,7 +631,7 @@ wxString pgFunction::GetArgSigList(const bool forScript)
 pgFunction *pgFunctionFactory::AppendFunctions(pgObject *obj, pgSchema *schema, ctlTree *browser, const wxString &restriction)
 {
 	// Caches
-	cacheMap typeCache, exprCache;
+	cacheMap exprCache;
 
 	pgFunction *function = 0;
 	wxString argNamesCol, argDefsCol, proConfigCol, proType, seclab;
@@ -663,17 +664,8 @@ pgFunction *pgFunctionFactory::AppendFunctions(pgObject *obj, pgSchema *schema, 
 	                       + restriction +
 	                       wxT(" ORDER BY proname"));
 
-	pgSet *types = obj->GetDatabase()->ExecuteSet(wxT(
-	                   "SELECT oid, format_type(oid, NULL) AS typname FROM pg_type"));
-
-	if (types)
-	{
-		while(!types->Eof())
-		{
-			typeCache[types->GetVal(wxT("oid"))] = types->GetVal(wxT("typname"));
-			types->MoveNext();
-		}
-	}
+	pgTypeCache *typeCache = obj->GetConnection()->GetTypeCache();
+	typeCache->PreCache();
 
 	if (functions)
 	{
@@ -764,7 +756,8 @@ pgFunction *pgFunctionFactory::AppendFunctions(pgObject *obj, pgSchema *schema, 
 				function->iSetIsWindow(false);
 
 			// Now iterate the arguments and build the arrays
-			wxString type, name, mode;
+			wxString name, mode;
+			OID type;
 			size_t nArgsIN = 0;
 			size_t nArgNames = 0;
 
@@ -792,9 +785,9 @@ pgFunction *pgFunctionFactory::AppendFunctions(pgObject *obj, pgSchema *schema, 
 					{
 						if (name == wxT("_retval_"))
 						{
-							type = argTypesTkz.GetNextToken();
+							type = StrToOid(argTypesTkz.GetNextToken());
 							// this will be the return type for this object
-							function->iSetReturnType(typeCache[type]);
+							function->iSetReturnType(typeCache->GetTypeName(type));
 
 							// consume uniformly, mode will definitely be "OUT"
 							mode = argModesTkz.GetNextToken();
@@ -809,8 +802,8 @@ pgFunction *pgFunctionFactory::AppendFunctions(pgObject *obj, pgSchema *schema, 
 
 				// Add the arg type. This is a type oid, so
 				// look it up in the hashmap
-				type = argTypesTkz.GetNextToken();
-				function->iAddArgType(typeCache[type]);
+				type = StrToOid(argTypesTkz.GetNextToken());
+				function->iAddArgType(typeCache->GetTypeName(type));
 
 				// Now the mode
 				mode = argModesTkz.GetNextToken();
@@ -977,7 +970,6 @@ pgFunction *pgFunctionFactory::AppendFunctions(pgObject *obj, pgSchema *schema, 
 		}
 
 		delete functions;
-		delete types;
 	}
 	return function;
 }

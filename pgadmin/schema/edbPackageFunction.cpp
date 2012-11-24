@@ -16,6 +16,7 @@
 #include "pgAdmin3.h"
 #include "utils/pgfeatures.h"
 #include "schema/edbPackageFunction.h"
+#include "utils/pgTypeCache.h"
 
 
 edbPackageFunction::edbPackageFunction(edbPackage *newPackage, const wxString &newName)
@@ -267,8 +268,8 @@ edbPackageFunction *edbPackageFunctionFactory::AppendFunctions(pgObject *obj, ed
 	edbPackageFunction *packageFunction = 0;
 	pgSet *packageFunctions;
 
-	// Caches
-	cacheMap typeCache, exprCache;
+	// Caches (types are read from the connection's typeCache).
+	cacheMap exprCache;
 	wxString sql, argDefsCol;
 
 	if (obj->GetConnection()->HasFeature(FEATURE_FUNCTION_DEFAULTS))
@@ -304,14 +305,8 @@ edbPackageFunction *edbPackageFunctionFactory::AppendFunctions(pgObject *obj, ed
 
 	packageFunctions = obj->GetDatabase()->ExecuteSet(sql);
 
-	pgSet *types = obj->GetDatabase()->ExecuteSet(wxT(
-	                   "SELECT oid, format_type(oid, NULL) AS typname FROM pg_type"));
-
-	while(!types->Eof())
-	{
-		typeCache[types->GetVal(wxT("oid"))] = types->GetVal(wxT("typname"));
-		types->MoveNext();
-	}
+	pgTypeCache *typeCache = obj->GetConnection()->GetTypeCache();
+	typeCache->PreCache();
 
 	if (packageFunctions)
 	{
@@ -375,7 +370,7 @@ edbPackageFunction *edbPackageFunctionFactory::AppendFunctions(pgObject *obj, ed
 				// Add the arg type. This is a type oid, so
 				// look it up in the hashmap
 				type = argTypesTkz.GetNextToken();
-				packageFunction->iAddArgType(typeCache[type]);
+				packageFunction->iAddArgType(typeCache->GetTypeName(StrToOid(type)));
 
 				// Now add the name, stripping the quotes if
 				// necessary.
@@ -470,7 +465,7 @@ edbPackageFunction *edbPackageFunctionFactory::AppendFunctions(pgObject *obj, ed
 
 			packageFunction->iSetOid(packageFunctions->GetOid(wxT("oid")));
 			packageFunction->iSetArgCount(packageFunctions->GetOid(wxT("nargs")));
-			packageFunction->iSetReturnType(typeCache[packageFunctions->GetVal(wxT("eltdatatype"))]);
+			packageFunction->iSetReturnType(typeCache->GetTypeName(StrToOid(packageFunctions->GetVal(wxT("eltdatatype")))));
 
 			if (packageFunctions->GetVal(wxT("visibility")) == wxT("+"))
 				packageFunction->iSetVisibility(_("Public"));
@@ -491,7 +486,6 @@ edbPackageFunction *edbPackageFunctionFactory::AppendFunctions(pgObject *obj, ed
 		}
 
 		delete packageFunctions;
-		delete types;
 	}
 	return packageFunction;
 }
