@@ -230,7 +230,6 @@ pgObject *pgAggregateFactory::CreateObjects(pgCollection *collection, ctlTree *b
 
 	// Make sure the cache of data types is loaded
 	pgTypeCache *typeCache = collection->GetConnection()->GetTypeCache();
-	typeCache->PreCache();
 
 	// Build the query to get all objects
 	wxString sql =

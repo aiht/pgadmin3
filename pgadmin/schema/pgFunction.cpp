@@ -665,7 +665,6 @@ pgFunction *pgFunctionFactory::AppendFunctions(pgObject *obj, pgSchema *schema, 
 	                       wxT(" ORDER BY proname"));
 
 	pgTypeCache *typeCache = obj->GetConnection()->GetTypeCache();
-	typeCache->PreCache();
 
 	if (functions)
 	{

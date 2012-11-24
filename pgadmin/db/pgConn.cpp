@@ -317,6 +317,9 @@ bool pgConn::DoConnect()
 					return false;
 			}
 		}
+
+		// FIXME: is this getting called too often...?
+		GetTypeCache()->PreCache();
 	}
 	else
 		return false;

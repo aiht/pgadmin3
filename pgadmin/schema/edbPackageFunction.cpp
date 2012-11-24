@@ -306,7 +306,6 @@ edbPackageFunction *edbPackageFunctionFactory::AppendFunctions(pgObject *obj, ed
 	packageFunctions = obj->GetDatabase()->ExecuteSet(sql);
 
 	pgTypeCache *typeCache = obj->GetConnection()->GetTypeCache();
-	typeCache->PreCache();
 
 	if (packageFunctions)
 	{

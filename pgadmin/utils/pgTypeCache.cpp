@@ -173,6 +173,7 @@ void pgTypeCache::iLoadTypes(int limit, OID oid, int *typeMod)
 	bool useLimit = limit > 0;
 	bool useOid = oid > 0;
 	bool useMod = useOid && typeMod != NULL;
+	bool loadSystem = false;
 
 	const wxChar *sqlCommonFields = wxT("typtypmod,typbasetype,")
 			wxT("format_type(oid,NULL) as basic,")
@@ -204,6 +205,11 @@ void pgTypeCache::iLoadTypes(int limit, OID oid, int *typeMod)
 		sql = wxT("SELECT oid,");
 		sql += sqlCommonFields;
 		sql += sqlFrom;
+		if (!loadSystem)
+		{
+			tmp.Printf(wxT(" WHERE NOT (oid >= %d AND oid < %d)"), 10000, 16384); //FirstBootstrapObjectId, FirstNormalObjectId);
+			sql += tmp;
+		}
 		if (useLimit)
 		{
 			tmp.Printf(wxT(" LIMIT %d"), limit);
