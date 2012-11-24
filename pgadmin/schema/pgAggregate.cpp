@@ -358,6 +358,7 @@ pgObject *pgAggregateFactory::CreateObjects(pgCollection *collection, ctlTree *b
 		}
 
 		delete aggregates;
+		delete types;
 	}
 	return aggregate;
 }
