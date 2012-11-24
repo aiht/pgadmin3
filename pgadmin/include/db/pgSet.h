@@ -21,15 +21,6 @@
 
 #include "utils/misc.h"
 
-typedef enum
-{
-    PGTYPCLASS_NUMERIC = 1,
-    PGTYPCLASS_BOOL,
-    PGTYPCLASS_STRING,
-    PGTYPCLASS_DATE,
-    PGTYPCLASS_OTHER
-} pgTypClass;
-
 class pgConn;
 
 // Class declarations
@@ -139,8 +130,6 @@ protected:
 	wxString ExecuteScalar(const wxString &sql) const;
 	wxMBConv &conv;
 	bool needColQuoting;
-	mutable wxArrayString colTypes, colFullTypes;
-	wxArrayInt colClasses;
 };
 
 

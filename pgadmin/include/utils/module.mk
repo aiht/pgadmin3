@@ -22,7 +22,8 @@ pgadmin3_SOURCES += \
 	include/utils/sysProcess.h \
 	include/utils/sysSettings.h \
 	include/utils/utffile.h \
-	include/utils/macros.h
+	include/utils/macros.h \
+	include/utils/pgTypeCache.h
 
 EXTRA_DIST += \
         include/utils/module.mk

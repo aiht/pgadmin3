@@ -16,7 +16,7 @@
 #include <wx/datetime.h>
 #include <wx/tokenzr.h>
 
-#include "utils/misc.h"
+// ?? #include "utils/misc.h"
 
 class wxImageList;
 extern wxImageList *imageList;
@@ -265,5 +265,13 @@ wxString commandLineCleanOption(const wxString &option, bool schemaObject = fals
 wxString qtIdent(const wxString &value);    // add " if necessary
 wxString qtTypeIdent(const wxString &value);    // add " if necessary
 
-#endif
+typedef enum
+{
+    PGTYPCLASS_NUMERIC = 1,
+    PGTYPCLASS_BOOL,
+    PGTYPCLASS_STRING,
+    PGTYPCLASS_DATE,
+    PGTYPCLASS_OTHER
+} pgTypClass;
 
+#endif

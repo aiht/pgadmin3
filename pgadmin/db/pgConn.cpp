@@ -41,6 +41,7 @@ typedef u_long in_addr_t;
 #include "db/pgConn.h"
 #include "utils/misc.h"
 #include "db/pgSet.h"
+#include "utils/pgTypeCache.h"
 
 double pgConn::libpqVersion = 8.0;
 
@@ -79,6 +80,8 @@ pgConn::pgConn(const wxString &server, const wxString &service, const wxString &
 	conv = &wxConvLibc;
 	needColQuoting = false;
 	utfConnectString = false;
+
+	typeCache = new pgTypeCache(this);
 
 	// Check the hostname/ipaddress
 	conn = 0;
@@ -227,6 +230,7 @@ pgConn::pgConn(const wxString &server, const wxString &service, const wxString &
 pgConn::~pgConn()
 {
 	Close();
+	delete typeCache;
 }
 
 
@@ -352,9 +356,15 @@ bool pgConn::Reconnect()
 
 pgConn *pgConn::Duplicate()
 {
-	return new pgConn(wxString(save_server), wxString(save_service), wxString(save_hostaddr), wxString(save_database), wxString(save_username), wxString(save_password),
+	pgConn *copy = new pgConn(wxString(save_server), wxString(save_service), wxString(save_hostaddr), wxString(save_database), wxString(save_username), wxString(save_password),
 	                  save_port, save_rolename, save_sslmode, save_oid,
 	                  save_applicationname, save_sslcert, save_sslkey, save_sslrootcert, save_sslcrl, save_sslcompression);
+
+	if(typeCache != NULL && copy != NULL && copy->typeCache != NULL)
+	{
+		copy->typeCache->SetInitial(typeCache);
+	}
+	return copy;
 }
 
 
@@ -1129,3 +1139,9 @@ bool pgConn::TableHasColumn(wxString schemaname, wxString tblname, const wxStrin
 	return false;
 }
 
+pgTypeCache *pgConn::GetTypeCache()
+{
+	wxASSERT(typeCache != NULL);
+	typeCache->assertConnMatchLink(this);
+	return typeCache;
+}

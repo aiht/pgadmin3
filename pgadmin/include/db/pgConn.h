@@ -21,6 +21,8 @@
 // App headers
 #include "pgSet.h"
 
+class pgTypeCache;
+
 // status enums
 enum
 {
@@ -247,6 +249,8 @@ public:
 	pgNotification *GetNotification();
 	int GetTxStatus();
 
+	pgTypeCache *GetTypeCache();
+
 	void Reset();
 
 	bool StartCopy(const wxString query);
@@ -278,6 +282,10 @@ protected:
 	friend class pgQueryThread;
 
 private:
+	// This class can not be copied.
+	pgConn(const pgConn &rhs);
+	const pgConn &operator=(const pgConn &rhs);
+
 	bool DoConnect();
 
 	wxString qtString(const wxString &value);
@@ -289,6 +297,8 @@ private:
 
 	wxString reservedNamespaces;
 	wxString connstr;
+
+	pgTypeCache *typeCache;
 
 	wxString save_server, save_service, save_hostaddr, save_database, save_username, save_password, save_rolename, save_applicationname;
 	wxString save_sslcert, save_sslkey, save_sslrootcert, save_sslcrl;

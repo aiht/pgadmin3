@@ -23,6 +23,7 @@
 #include "db/pgQueryThread.h"
 #include "utils/sysLogger.h"
 #include "utils/pgDefs.h"
+#include "utils/pgTypeCache.h"
 
 pgSet::pgSet()
 	: conv(wxConvLibc)
@@ -52,13 +53,6 @@ pgSet::pgSet(PGresult *newRes, pgConn *newConn, wxMBConv &cnv, bool needColQt)
 	else
 	{
 		nCols = PQnfields(res);
-		for (int x = 0; x < nCols + 1; x++)
-		{
-			colTypes.Add(wxT(""));
-			colFullTypes.Add(wxT(""));
-			colClasses.Add(0);
-		}
-
 		nRows = PQntuples(res);
 		MoveFirst();
 	}
@@ -100,84 +94,20 @@ long pgSet::GetInsertedCount() const
 pgTypClass pgSet::ColTypClass(const int col) const
 {
 	wxASSERT(col < nCols && col >= 0);
-
-	if (colClasses[col] != 0)
-		return (pgTypClass)colClasses[col];
-
-	wxString typoid = ExecuteScalar(
-	                      wxT("SELECT CASE WHEN typbasetype=0 THEN oid else typbasetype END AS basetype\n")
-	                      wxT("  FROM pg_type WHERE oid=") + NumToStr(ColTypeOid(col)));
-
-	switch (StrToLong(typoid))
-	{
-		case PGOID_TYPE_BOOL:
-			colClasses[col] = PGTYPCLASS_BOOL;
-			break;
-		case PGOID_TYPE_INT8:
-		case PGOID_TYPE_INT2:
-		case PGOID_TYPE_INT4:
-		case PGOID_TYPE_OID:
-		case PGOID_TYPE_XID:
-		case PGOID_TYPE_TID:
-		case PGOID_TYPE_CID:
-		case PGOID_TYPE_FLOAT4:
-		case PGOID_TYPE_FLOAT8:
-		case PGOID_TYPE_MONEY:
-		case PGOID_TYPE_BIT:
-		case PGOID_TYPE_NUMERIC:
-			colClasses[col] = PGTYPCLASS_NUMERIC;
-			break;
-		case PGOID_TYPE_BYTEA:
-		case PGOID_TYPE_CHAR:
-		case PGOID_TYPE_NAME:
-		case PGOID_TYPE_TEXT:
-		case PGOID_TYPE_VARCHAR:
-			colClasses[col] = PGTYPCLASS_STRING;
-			break;
-		case PGOID_TYPE_TIMESTAMP:
-		case PGOID_TYPE_TIMESTAMPTZ:
-		case PGOID_TYPE_TIME:
-		case PGOID_TYPE_TIMETZ:
-		case PGOID_TYPE_INTERVAL:
-			colClasses[col] = PGTYPCLASS_DATE;
-			break;
-		default:
-			colClasses[col] = PGTYPCLASS_OTHER;
-			break;
-	}
-
-	return (pgTypClass)colClasses[col];
+	return conn->GetTypeCache()->GetTypeClass(ColTypeOid(col));
 }
 
 
 wxString pgSet::ColType(const int col) const
 {
 	wxASSERT(col < nCols && col >= 0);
-
-	if (!colTypes[col].IsEmpty())
-		return colTypes[col];
-
-	wxString szSQL, szResult;
-	szSQL.Printf(wxT("SELECT format_type(oid,NULL) as typname FROM pg_type WHERE oid = %d"), (int)ColTypeOid(col));
-	szResult = ExecuteScalar(szSQL);
-	colTypes[col] = szResult;
-
-	return szResult;
+	return conn->GetTypeCache()->GetTypeName(ColTypeOid(col));
 }
 
 wxString pgSet::ColFullType(const int col) const
 {
 	wxASSERT(col < nCols && col >= 0);
-
-	if (!colFullTypes[col].IsEmpty())
-		return colFullTypes[col];
-
-	wxString szSQL, szResult;
-	szSQL.Printf(wxT("SELECT format_type(oid,%d) as typname FROM pg_type WHERE oid = %d"), (int)ColTypeMod(col), (int)ColTypeOid(col));
-	szResult = ExecuteScalar(szSQL);
-	colFullTypes[col] = szResult;
-
-	return szResult;
+	return conn->GetTypeCache()->GetFullTypeName(ColTypeOid(col), ColTypeMod(col));
 }
 
 int pgSet::ColScale(const int col) const
@@ -384,12 +314,6 @@ OID pgSet::GetOid(const int col) const
 OID pgSet::GetOid(const wxString &col) const
 {
 	return GetOid(ColNumber(col));
-}
-
-
-wxString pgSet::ExecuteScalar(const wxString &sql) const
-{
-	return conn->ExecuteScalar(sql);
 }
 
 

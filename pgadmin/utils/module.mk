@@ -21,7 +21,8 @@ pgadmin3_SOURCES += \
 	utils/sysSettings.cpp \
 	utils/tabcomplete.c \
 	utils/utffile.cpp \
-	utils/macros.cpp
+	utils/macros.cpp \
+	utils/pgTypeCache.cpp
 
 EXTRA_DIST += \
 	utils/module.mk \
