@@ -15,6 +15,16 @@
 #include "db/pgConn.h"
 #include "utils/pgDefs.h"
 
+// Some extra logging that can be turned on for debugging the cache, without making the rest of the log unreadable.
+//#define TYPE_CACHE_EXTRA_LOG
+
+#ifdef TYPE_CACHE_EXTRA_LOG
+#define wxLogDebugExtra(msg) wxLogDebug(msg)
+#else
+#define wxLogDebugExtra(msg)
+#endif
+
+
 CachedTypeDetails::CachedTypeDetails()
 	: typeClass(PGTYPCLASS_OTHER),
 	typTypMod(0)
@@ -32,28 +42,28 @@ void pgTypeCache::SetInitial(const pgTypeCache *other)
 wxString pgTypeCache::GetTypeName(OID oid)
 {
 	oidTypeMap::iterator it = iLoadTypeIfMissing(oid);
-	wxLogDebug(wxString::Format(wxT("pgTypeCache: got basic name for oid %d: %s"), oid, (*it).second.basicName.c_str()));
+	wxLogDebugExtra(wxString::Format(wxT("pgTypeCache: got basic name for oid %d: %s"), oid, (*it).second.basicName.c_str()));
 	return (*it).second.basicName;
 }
 
 pgTypClass pgTypeCache::GetTypeClass(OID oid)
 {
 	oidTypeMap::iterator it = iLoadTypeIfMissing(oid);
-	wxLogDebug(wxString::Format(wxT("pgTypeCache: got type class for oid %d: %d"), oid, (*it).second.typeClass));
+	wxLogDebugExtra(wxString::Format(wxT("pgTypeCache: got type class for oid %d: %d"), oid, (*it).second.typeClass));
 	return (*it).second.typeClass;
 }
 
 wxString pgTypeCache::GetFullTypeName(OID oid, int typeMod)
 {
 	oidTypeMap::iterator it = iLoadTypeIfMissing(oid, &typeMod);
-	wxLogDebug(wxString::Format(wxT("pgTypeCache: got full name for oid %d, typeMod %d: %s"), oid, typeMod, (*it).second.fullNames[typeMod].c_str()));
+	wxLogDebugExtra(wxString::Format(wxT("pgTypeCache: got full name for oid %d, typeMod %d: %s"), oid, typeMod, (*it).second.fullNames[typeMod].c_str()));
 	return (*it).second.fullNames[typeMod];
 }
 
 wxString pgTypeCache::GetDefaultFullTypeName(OID oid)
 {
 	oidTypeMap::iterator it = iLoadTypeIfMissing(oid);
-	wxLogDebug(wxString::Format(wxT("pgTypeCache: got default full name for oid %d: %s"), oid, (*it).second.fullNames[(*it).second.typTypMod].c_str()));
+	wxLogDebugExtra(wxString::Format(wxT("pgTypeCache: got default full name for oid %d: %s"), oid, (*it).second.fullNames[(*it).second.typTypMod].c_str()));
 	return (*it).second.fullNames[(*it).second.typTypMod];
 }
 
@@ -118,17 +128,19 @@ oidTypeMap::iterator pgTypeCache::iLoadTypeIfMissing(OID oid, int *typeMod /*= N
 		(*it).second.fullNames.find(*typeMod) == (*it).second.fullNames.end();
 	if (typeMissing)
 	{
-		wxLogDebug(wxString::Format(wxT("pgTypeCache: cache miss for oid %d"), oid));
+		wxLogDebugExtra(wxString::Format(wxT("pgTypeCache: cache miss for oid %d"), oid));
 		iLoadTypes(0, oid, typeMod);
 		it = types.find(oid);
 	}
 	else if (modMissing)
 	{
-		wxLogDebug(wxString::Format(wxT("pgTypeCache: partial cache hit for oid %d, typeMod %d"), oid, *typeMod));
+		wxLogDebugExtra(wxString::Format(wxT("pgTypeCache: partial cache hit for oid %d, typeMod %d"), oid, *typeMod));
 		iLoadModName(it, *typeMod);
 	}
 	else
-		wxLogDebug(wxString::Format(wxT("pgTypeCache: full cache hit for oid %d"), oid));
+	{
+		wxLogDebugExtra(wxString::Format(wxT("pgTypeCache: full cache hit for oid %d"), oid));
+	}
 
 	// Wait, what happens if we try to load an invalid OID? Bad things!
 	// It shouldn't happen, but maybe if a type was deleted after we got a field of that type in our resultset?
@@ -179,7 +191,9 @@ void pgTypeCache::iLoadTypes(int limit, OID oid, int *typeMod)
 			wxLogDebug(wxString::Format(wxT("pgTypeCache: loading oid %d with typeMod %d"), oid, *typeMod));
 		}
 		else
+		{
 			wxLogDebug(wxString::Format(wxT("pgTypeCache: loading oid %d"), oid));
+		}
 
 		sql += sqlFrom;
 		tmp.Printf(wxT(" WHERE oid=%d"), oid);
@@ -194,10 +208,10 @@ void pgTypeCache::iLoadTypes(int limit, OID oid, int *typeMod)
 		{
 			tmp.Printf(wxT(" LIMIT %d"), limit);
 			sql += tmp;
-			wxLogDebug(wxString::Format(wxT("pgTypeCache: loading %d types in a batch"), limit));
+			wxLogDebug(wxString::Format(wxT("pgTypeCache: loading up to %d types in a batch"), limit));
 		}
 		else
-			wxLogDebug(wxString::Format(wxT("pgTypeCache: loading entire pg_types table in a batch")));
+			wxLogDebug(wxString::Format(wxT("pgTypeCache: loading entire pg_type table in a batch")));
 	}
 
 	pgSet *result = conn->ExecuteSet(sql);
@@ -223,13 +237,16 @@ void pgTypeCache::iLoadTypes(int limit, OID oid, int *typeMod)
 		delete result;
 	}
 	else
+	{
 		wxLogError(wxString::Format(wxT("pgTypeCache: failed to load type details")));
+	}
 }
 
 // Load a typmod-modified name for a type that is already cached.
 void pgTypeCache::iLoadModName(oidTypeMap::iterator existingType, int typeMod)
 {
 	wxASSERT(existingType != types.end());
+	wxLogDebug(wxString::Format(wxT("pgTypeCache: loading full name for oid %d typmod %d"), (*existingType).first, typeMod));
 	wxString szSQL;
 	szSQL.Printf(wxT("SELECT format_type(%d,%d)"), (*existingType).first, typeMod);
 	(*existingType).second.fullNames[typeMod] = conn->ExecuteScalar(szSQL);

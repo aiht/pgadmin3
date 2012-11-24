@@ -32,7 +32,7 @@ public:
 
 	pgTypClass typeClass;   // type class eg. numeric, string etc.
 	wxString basicName;      // format_type(oid, NULL)
-	int typTypMod;           // pg_types.typtypmod
+	int typTypMod;           // pg_type.typtypmod
 	typmodStringMap fullNames;        // map of typMod -> format_type(oid, typMod)
 };
 
@@ -53,7 +53,7 @@ public:
 	// Get the type class eg. numeric, string etc.
 	pgTypClass GetTypeClass(OID oid);
 
-	// Get the full type name from 'format_type(oid, pg_types.typtypmod)'
+	// Get the full type name from 'format_type(oid, pg_type.typtypmod)'
 	// TODO: Check if this should still be used. My old patch used it in three places:
 	// edbPackageFunctionFactory::AppendFunctions - now uses 'format_type(oid, NULL)'
 	// pgAggregateFactory::CreateObjects - still uses typtypmod.
