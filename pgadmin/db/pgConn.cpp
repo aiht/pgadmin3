@@ -17,6 +17,8 @@
 // PostgreSQL headers
 #include <libpq-fe.h>
 #include "utils/pgfeatures.h"
+#include "schema/pgDatatype.h"
+
 
 // Network  headers
 #ifdef __WXMSW__
@@ -82,6 +84,7 @@ pgConn::pgConn(const wxString &server, const wxString &service, const wxString &
 	utfConnectString = false;
 
 	typeCache = new pgTypeCache(this);
+	datatypeCache = NULL;
 
 	// Check the hostname/ipaddress
 	conn = 0;
@@ -231,6 +234,7 @@ pgConn::~pgConn()
 {
 	Close();
 	delete typeCache;
+	delete datatypeCache;
 }
 
 
@@ -367,6 +371,11 @@ pgConn *pgConn::Duplicate()
 	{
 		copy->typeCache->SetInitial(typeCache);
 	}
+	if(datatypeCache != NULL && copy != NULL)
+	{
+		copy->GetDatatypeCache()->SetInitial(datatypeCache);
+	}
+
 	return copy;
 }
 
@@ -1147,4 +1156,20 @@ pgTypeCache *pgConn::GetTypeCache()
 	wxASSERT(typeCache != NULL);
 	typeCache->assertConnMatchLink(this);
 	return typeCache;
+}
+
+pgDatatypeCache *pgConn::GetDatatypeCache()
+{
+	if (datatypeCache == NULL)
+	{
+		datatypeCache = new pgDatatypeCache(this);
+	}
+	wxASSERT(datatypeCache != NULL);
+	datatypeCache->assertConnMatchLink(this);
+	return datatypeCache;
+}
+
+const pgDatatype *pgConn::GetDatatype(OID typeOid)
+{
+	return GetDatatypeCache()->GetDatatype(typeOid);
 }

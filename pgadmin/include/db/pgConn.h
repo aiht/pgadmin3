@@ -23,6 +23,10 @@
 
 class pgTypeCache;
 
+class pgDatatype;
+class pgDatatypeCache;
+
+
 // status enums
 enum
 {
@@ -251,6 +255,9 @@ public:
 
 	pgTypeCache *GetTypeCache();
 
+	pgDatatypeCache *GetDatatypeCache();
+	const pgDatatype *GetDatatype(OID typeOid);
+
 	void Reset();
 
 	bool StartCopy(const wxString query);
@@ -299,6 +306,7 @@ private:
 	wxString connstr;
 
 	pgTypeCache *typeCache;
+	pgDatatypeCache *datatypeCache;
 
 	wxString save_server, save_service, save_hostaddr, save_database, save_username, save_password, save_rolename, save_applicationname;
 	wxString save_sslcert, save_sslkey, save_sslrootcert, save_sslcrl;

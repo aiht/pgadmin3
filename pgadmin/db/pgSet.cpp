@@ -24,6 +24,7 @@
 #include "utils/sysLogger.h"
 #include "utils/pgDefs.h"
 #include "utils/pgTypeCache.h"
+#include "schema/pgDatatype.h"
 
 pgSet::pgSet()
 	: conv(wxConvLibc)
@@ -101,13 +102,19 @@ pgTypClass pgSet::ColTypClass(const int col) const
 wxString pgSet::ColType(const int col) const
 {
 	wxASSERT(col < nCols && col >= 0);
-	return conn->GetTypeCache()->GetTypeName(ColTypeOid(col));
+	wxString n = conn->GetDatatype(ColTypeOid(col))->FullName();
+	wxString o = conn->GetTypeCache()->GetTypeName(ColTypeOid(col));
+	wxASSERT(n == o);
+	return o;
 }
 
 wxString pgSet::ColFullType(const int col) const
 {
 	wxASSERT(col < nCols && col >= 0);
-	return conn->GetTypeCache()->GetFullTypeName(ColTypeOid(col), ColTypeMod(col));
+	wxString n = conn->GetDatatype(ColTypeOid(col))->FullName(ColTypeMod(col));
+	wxString o = conn->GetTypeCache()->GetFullTypeName(ColTypeOid(col), ColTypeMod(col));
+	wxASSERT(n == o);
+	return o;
 }
 
 int pgSet::ColScale(const int col) const
