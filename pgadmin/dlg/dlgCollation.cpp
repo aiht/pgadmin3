@@ -20,7 +20,6 @@
 #include "dlg/dlgCollation.h"
 #include "schema/pgSchema.h"
 #include "schema/pgCollation.h"
-#include "schema/pgDatatype.h"
 
 
 // pointer to controls

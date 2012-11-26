@@ -20,7 +20,6 @@
 #include "dlg/dlgTextSearchTemplate.h"
 #include "schema/pgSchema.h"
 #include "schema/pgTextSearchTemplate.h"
-#include "schema/pgDatatype.h"
 
 
 // pointer to controls

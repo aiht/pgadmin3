@@ -20,7 +20,6 @@
 #include "dlg/dlgAggregate.h"
 #include "schema/pgSchema.h"
 #include "schema/pgAggregate.h"
-#include "schema/pgDatatype.h"
 #include "ctl/ctlSeclabelPanel.h"
 #include "frm/frmMain.h"
 #include "schema/pgUser.h"

@@ -19,7 +19,6 @@
 #include "slony/slCluster.h"
 #include "slony/slNode.h"
 #include "slony/slListen.h"
-#include "schema/pgDatatype.h"
 
 // pointer to controls
 

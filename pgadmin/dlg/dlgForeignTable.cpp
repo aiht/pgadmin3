@@ -20,7 +20,6 @@
 #include "dlg/dlgForeignTable.h"
 #include "schema/pgSchema.h"
 #include "schema/pgForeignTable.h"
-#include "schema/pgDatatype.h"
 #include "ctl/ctlSeclabelPanel.h"
 
 

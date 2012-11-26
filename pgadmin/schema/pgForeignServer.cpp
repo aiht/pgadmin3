@@ -17,7 +17,6 @@
 #include "utils/misc.h"
 #include "schema/pgForeignServer.h"
 #include "schema/pgUserMapping.h"
-#include "schema/pgDatatype.h"
 
 
 pgForeignServer::pgForeignServer(pgForeignDataWrapper *newForeignDataWrapper, const wxString &newName)

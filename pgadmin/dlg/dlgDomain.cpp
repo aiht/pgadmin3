@@ -23,7 +23,6 @@
 #include "schema/pgSchema.h"
 #include "schema/pgCheck.h"
 #include "schema/pgDomain.h"
-#include "schema/pgDatatype.h"
 #include "ctl/ctlSeclabelPanel.h"
 
 

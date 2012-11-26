@@ -19,7 +19,6 @@
 
 #include "dlg/dlgCast.h"
 #include "schema/pgCast.h"
-#include "schema/pgDatatype.h"
 
 
 // pointer to controls

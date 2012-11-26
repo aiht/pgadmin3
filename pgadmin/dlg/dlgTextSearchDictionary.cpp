@@ -20,9 +20,6 @@
 #include "dlg/dlgTextSearchDictionary.h"
 #include "schema/pgSchema.h"
 #include "schema/pgTextSearchDictionary.h"
-#include "schema/pgDatatype.h"
-
-
 // pointer to controls
 #define cbTemplate          CTRL_COMBOBOX2("cbTemplate")
 #define lstOptions          CTRL_LISTVIEW("lstOptions")

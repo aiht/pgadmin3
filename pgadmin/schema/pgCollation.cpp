@@ -16,7 +16,6 @@
 #include "pgAdmin3.h"
 #include "utils/misc.h"
 #include "schema/pgCollation.h"
-#include "schema/pgDatatype.h"
 
 
 /*
