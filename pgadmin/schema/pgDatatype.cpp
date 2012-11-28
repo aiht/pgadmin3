@@ -24,15 +24,17 @@ pgDatatype::pgDatatype()
 {
 	needSchema = false;
 	oid = 0;
+	baseOid = 0;
 	typmod = -1;
 	typtype = '\0';
 }
 
-pgDatatype::pgDatatype(OID o, const wxString &nsp, const wxString &typname, char ttype, bool isDup)
+pgDatatype::pgDatatype(OID o, OID base, const wxString &nsp, const wxString &typname, char ttype, bool isDup)
 {
 	needSchema = isDup;
 	schema = nsp;
 	oid = o;
+	baseOid = base;
 	typmod = -1;
 	typtype = ttype;
 
@@ -44,6 +46,7 @@ pgDatatype::pgDatatype(const wxString &nsp, const wxString &typname, bool isDup,
 	needSchema = isDup;
 	schema = nsp;
 	oid = 0;
+	baseOid = 0;
 	typtype = '\0';
 	typmod = mod;
 
@@ -240,6 +243,53 @@ wxString pgDatatype::GetQuotedSchemaPrefix(pgDatabase *db) const
 }
 
 
+pgTypClass pgDatatype::GetTypeClass() const
+{
+	return GetTypeClass(baseOid == 0? oid : baseOid);
+}
+
+
+pgTypClass pgDatatype::GetTypeClass(OID base) const
+{
+	switch (base)
+	{
+		case PGOID_TYPE_BOOL:
+			return PGTYPCLASS_BOOL;
+
+		case PGOID_TYPE_INT8:
+		case PGOID_TYPE_INT2:
+		case PGOID_TYPE_INT4:
+		case PGOID_TYPE_OID:
+		case PGOID_TYPE_XID:
+		case PGOID_TYPE_TID:
+		case PGOID_TYPE_CID:
+		case PGOID_TYPE_FLOAT4:
+		case PGOID_TYPE_FLOAT8:
+		case PGOID_TYPE_MONEY:
+		case PGOID_TYPE_BIT:
+		case PGOID_TYPE_NUMERIC:
+			return PGTYPCLASS_NUMERIC;
+
+		case PGOID_TYPE_BYTEA:
+		case PGOID_TYPE_CHAR:
+		case PGOID_TYPE_NAME:
+		case PGOID_TYPE_TEXT:
+		case PGOID_TYPE_VARCHAR:
+			return PGTYPCLASS_STRING;
+
+		case PGOID_TYPE_TIMESTAMP:
+		case PGOID_TYPE_TIMESTAMPTZ:
+		case PGOID_TYPE_TIME:
+		case PGOID_TYPE_TIMETZ:
+		case PGOID_TYPE_INTERVAL:
+			return PGTYPCLASS_DATE;
+
+		default:
+			return PGTYPCLASS_OTHER;
+	}
+}
+
+
 long pgDatatype::GetTypmod(const wxString &name, const wxString &len, const wxString &prec)
 {
 	if (len.IsEmpty())
@@ -304,7 +354,10 @@ DatatypeReader::DatatypeReader(pgConn *conn, bool withDomains, bool addSerials)
 DatatypeReader::DatatypeReader(pgDatabase *db, OID oid)
 {
 	wxString condition;
-	condition.Printf(wxT("oid = %d"), oid);
+	if (oid > 0)
+	{
+		condition.Printf(wxT("t.oid = %d"), oid);
+	}
 
 	init(db->GetConnection(), condition, false, true);
 }
@@ -312,7 +365,10 @@ DatatypeReader::DatatypeReader(pgDatabase *db, OID oid)
 DatatypeReader::DatatypeReader(pgConn *conn, OID oid)
 {
 	wxString condition;
-	condition.Printf(wxT("oid = %d"), oid);
+	if (oid > 0)
+	{
+		condition.Printf(wxT("t.oid = %d"), oid);
+	}
 
 	init(conn, condition, false, true);
 }
@@ -320,7 +376,7 @@ DatatypeReader::DatatypeReader(pgConn *conn, OID oid)
 void DatatypeReader::init(pgConn *conn, const wxString &condition, bool addSerials, bool allowUnknown)
 {
 	connection = conn;
-	wxString sql = wxT("SELECT * FROM (SELECT format_type(t.oid,NULL) AS typname, typtype, t.oid as oid, nspname,\n")
+	wxString sql = wxT("SELECT * FROM (SELECT format_type(t.oid,NULL) AS typname, typtype, t.oid as oid, typbasetype, nspname,\n")
 	               wxT("       (SELECT COUNT(1) FROM pg_type t2 WHERE t2.typname = t.typname) > 1 AS isdup\n")
 	               wxT("  FROM pg_type t\n")
 	               wxT("  JOIN pg_namespace nsp ON typnamespace=nsp.oid\n")
@@ -334,8 +390,8 @@ void DatatypeReader::init(pgConn *conn, const wxString &condition, bool addSeria
 
 	if (addSerials)
 	{
-		sql += wxT(" UNION SELECT 'bigserial', 'b', 0, 'pg_catalog', false\n");
-		sql += wxT(" UNION SELECT 'serial', 'b', 0, 'pg_catalog', false\n");
+		sql += wxT(" UNION SELECT 'bigserial', 'b', 0, 0, 'pg_catalog', false\n");
+		sql += wxT(" UNION SELECT 'serial', 'b', 0, 0, 'pg_catalog', false\n");
 	}
 
 	sql += wxT("  ) AS dummy ORDER BY nspname <> 'pg_catalog', nspname <> 'public', nspname, 1");
@@ -395,7 +451,7 @@ pgDatatype DatatypeReader::GetDatatype() const
 {
 	wxString tt = set->GetVal(wxT("typtype"));
 	char ttype = tt.IsEmpty() ? '\0' : tt[0];
-	return pgDatatype(GetOid(), GetSchema(), GetTypename(), ttype, set->GetBool(wxT("isdup")));
+	return pgDatatype(GetOid(), GetBaseOid(), GetSchema(), GetTypename(), ttype, set->GetBool(wxT("isdup")));
 }
 
 
@@ -423,6 +479,12 @@ OID DatatypeReader::GetOid() const
 }
 
 
+OID DatatypeReader::GetBaseOid() const
+{
+	return set->GetOid(wxT("typbasetype"));
+}
+
+
 //--------------------------------------------------------------------------------------------------
 
 
@@ -438,7 +500,7 @@ const pgDatatype *pgDatatypeCache::GetDatatype(OID oid) const
 {
 	if (types.empty())
 	{
-		DatatypeReader dr(conn, false, false);
+		DatatypeReader dr(conn, true, false);
 		while (dr.HasMore())
 		{
 			pgDatatype d = dr.GetDatatype();
@@ -461,6 +523,13 @@ const pgDatatype *pgDatatypeCache::GetDatatype(OID oid) const
 		}
 		it = types.find(oid);
 		wxLogDebug(wxString::Format(wxT("pgDatatypeCache: loaded single missing record, oid %d"), oid));
+	}
+	if (it == types.end())
+	{
+		pgDatatype d(oid, oid, wxT("public"), wxT("(unknown)"), 'b', false);
+		types[d.Oid()] = d;
+		wxASSERT(oid == d.Oid());
+		it = types.find(oid);
 	}
 	wxASSERT(it != types.end());
 	return &(*it).second;

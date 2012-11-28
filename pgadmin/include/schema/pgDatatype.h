@@ -27,7 +27,7 @@ public:
 	pgDatatype();
 
 	// For storing the type definitions loaded from the pg_type table.
-	pgDatatype(OID oid, const wxString &nsp, const wxString &typname, char typtype, bool isduplicate);
+	pgDatatype(OID oid, OID baseOid, const wxString &nsp, const wxString &typname, char typtype, bool isduplicate);
 
 	// For representing the type of a specific column of a specific table.
 	pgDatatype(const wxString &nsp, const wxString &typname, bool isduplicate, long numdims, long typmod);
@@ -39,6 +39,10 @@ public:
 	OID Oid() const
 	{
 		return oid;
+	}
+	OID BaseOid() const
+	{
+		return baseOid;
 	}
 	int GetTyptype() const
 	{
@@ -57,6 +61,9 @@ public:
 
 	wxString GetSchemaPrefix(pgDatabase *db) const;
 	wxString GetQuotedSchemaPrefix(pgDatabase *db) const;
+
+	pgTypClass GetTypeClass() const;
+	pgTypClass GetTypeClass(OID baseOid) const;
 
 	long Length() const;
 	long Precision() const;
@@ -81,6 +88,7 @@ private:
 	wxString array;
 	long typmod;	// Only stored for a type instance (second constructor).
 	OID oid;
+	OID baseOid;
 	char typtype;
 	bool needSchema;
 };
@@ -111,14 +119,15 @@ public:
 	}
 
 	bool IsDomain() const;
-	bool IsVarlen() const;
-	bool MaySpecifyLength() const;
-	bool MaySpecifyPrecision() const;
+//	bool IsVarlen() const;
+//	bool MaySpecifyLength() const;
+//	bool MaySpecifyPrecision() const;
 	pgDatatype GetDatatype() const;
 	wxString GetTypename() const;
 	wxString GetSchema() const;
 	wxString GetOidStr() const;
 	OID GetOid() const;
+	OID GetBaseOid() const;
 
 private:
 	pgSet *set;

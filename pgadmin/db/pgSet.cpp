@@ -95,7 +95,10 @@ long pgSet::GetInsertedCount() const
 pgTypClass pgSet::ColTypClass(const int col) const
 {
 	wxASSERT(col < nCols && col >= 0);
-	return conn->GetTypeCache()->GetTypeClass(ColTypeOid(col));
+	pgTypClass n = conn->GetDatatype(ColTypeOid(col))->GetTypeClass();
+	pgTypClass o = conn->GetTypeCache()->GetTypeClass(ColTypeOid(col));
+	wxASSERT(n == o);
+	return o;
 }
 
 
