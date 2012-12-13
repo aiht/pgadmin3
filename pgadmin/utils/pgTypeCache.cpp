@@ -27,7 +27,7 @@
 
 CachedTypeDetails::CachedTypeDetails()
 	: typeClass(PGTYPCLASS_OTHER),
-	typTypMod(0)
+	  typTypMod(0)
 {
 }
 
@@ -125,7 +125,7 @@ oidTypeMap::iterator pgTypeCache::iLoadTypeIfMissing(OID oid, int *typeMod /*= N
 	oidTypeMap::iterator it = types.find(oid);
 	bool typeMissing = it == types.end();
 	bool modMissing = !typeMissing && typeMod != NULL &&
-		(*it).second.fullNames.find(*typeMod) == (*it).second.fullNames.end();
+	                  (*it).second.fullNames.find(*typeMod) == (*it).second.fullNames.end();
 	if (typeMissing)
 	{
 		wxLogDebugExtra(wxString::Format(wxT("pgTypeCache: cache miss for oid %d"), oid));
@@ -176,8 +176,8 @@ void pgTypeCache::iLoadTypes(int limit, OID oid, int *typeMod)
 	bool loadSystem = false;
 
 	const wxChar *sqlCommonFields = wxT("typtypmod,typbasetype,")
-			wxT("format_type(oid,NULL) as basic,")
-			wxT("format_type(oid,typtypmod) as def");
+	                                wxT("format_type(oid,NULL) as basic,")
+	                                wxT("format_type(oid,typtypmod) as def");
 	const wxChar *sqlFrom = wxT(" FROM pg_type");
 
 	wxString sql, tmp;
@@ -225,7 +225,7 @@ void pgTypeCache::iLoadTypes(int limit, OID oid, int *typeMod)
 	{
 		while (!result->Eof())
 		{
-			OID currOid = useOid? oid : result->GetOid(wxT("oid"));
+			OID currOid = useOid ? oid : result->GetOid(wxT("oid"));
 			CachedTypeDetails &currType = types[currOid];
 
 			currType.typTypMod = result->GetLong(wxT("typtypmod"));
@@ -236,7 +236,7 @@ void pgTypeCache::iLoadTypes(int limit, OID oid, int *typeMod)
 				currType.fullNames[*typeMod] = result->GetVal(wxT("bymod"));
 			}
 			OID baseType = result->GetOid(wxT("typbasetype"));
-			currType.typeClass = iGetTypeClass(baseType == 0? currOid : baseType);
+			currType.typeClass = iGetTypeClass(baseType == 0 ? currOid : baseType);
 
 			result->MoveNext();
 		}

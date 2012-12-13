@@ -364,8 +364,8 @@ bool pgConn::Reconnect()
 pgConn *pgConn::Duplicate()
 {
 	pgConn *copy = new pgConn(wxString(save_server), wxString(save_service), wxString(save_hostaddr), wxString(save_database), wxString(save_username), wxString(save_password),
-	                  save_port, save_rolename, save_sslmode, save_oid,
-	                  save_applicationname, save_sslcert, save_sslkey, save_sslrootcert, save_sslcrl, save_sslcompression);
+	                          save_port, save_rolename, save_sslmode, save_oid,
+	                          save_applicationname, save_sslcert, save_sslkey, save_sslrootcert, save_sslcrl, save_sslcompression);
 
 	if(typeCache != NULL && copy != NULL && copy->typeCache != NULL)
 	{

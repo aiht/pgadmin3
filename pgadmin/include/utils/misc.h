@@ -267,11 +267,11 @@ wxString qtTypeIdent(const wxString &value);    // add " if necessary
 
 typedef enum
 {
-    PGTYPCLASS_NUMERIC = 1,
-    PGTYPCLASS_BOOL,
-    PGTYPCLASS_STRING,
-    PGTYPCLASS_DATE,
-    PGTYPCLASS_OTHER
+	PGTYPCLASS_NUMERIC = 1,
+	PGTYPCLASS_BOOL,
+	PGTYPCLASS_STRING,
+	PGTYPCLASS_DATE,
+	PGTYPCLASS_OTHER
 } pgTypClass;
 
 #endif
