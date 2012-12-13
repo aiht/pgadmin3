@@ -21,7 +21,7 @@
 #include "frm/frmMain.h"
 #include "frm/frmReport.h"
 #include "frm/frmHint.h"
-#include "utils/pgTypeCache.h"
+#include "schema/pgDatatype.h"
 
 pgFunction::pgFunction(pgSchema *newSchema, const wxString &newName)
 	: pgSchemaObject(newSchema, functionFactory, newName)
@@ -653,18 +653,18 @@ pgFunction *pgFunctionFactory::AppendFunctions(pgObject *obj, pgSchema *schema, 
 	}
 
 	pgSet *functions = obj->GetDatabase()->ExecuteSet(
-	                       wxT("SELECT pr.oid, pr.xmin, pr.*, format_type(TYP.oid, NULL) AS typname, typns.nspname AS typnsp, lanname, ") +
+	                       wxT("SELECT pr.oid, pr.xmin, pr.*, lanname, ") +
 	                       argNamesCol  + argDefsCol + proConfigCol + proType +
 	                       wxT("       pg_get_userbyid(proowner) as funcowner, description") + seclab + wxT("\n")
 	                       wxT("  FROM pg_proc pr\n")
 	                       wxT("  JOIN pg_type typ ON typ.oid=prorettype\n")
-	                       wxT("  JOIN pg_namespace typns ON typns.oid=typ.typnamespace\n")
 	                       wxT("  JOIN pg_language lng ON lng.oid=prolang\n")
 	                       wxT("  LEFT OUTER JOIN pg_description des ON (des.objoid=pr.oid AND des.classoid='pg_proc'::regclass)\n")
 	                       + restriction +
 	                       wxT(" ORDER BY proname"));
 
-	pgTypeCache *typeCache = obj->GetConnection()->GetTypeCache();
+	pgDatatypeCache *typeCache = obj->GetConnection()->GetDatatypeCache();
+	wxASSERT(typeCache != NULL);
 
 	if (functions)
 	{
@@ -672,7 +672,8 @@ pgFunction *pgFunctionFactory::AppendFunctions(pgObject *obj, pgSchema *schema, 
 		{
 			bool isProcedure = false;
 			wxString lanname = functions->GetVal(wxT("lanname"));
-			wxString typname = functions->GetVal(wxT("typname"));
+			OID retTypeOid = functions->GetOid(wxT("prorettype"));
+			wxString typname = typeCache->GetDatatype(retTypeOid)->FullName();
 
 			// Is this an EDB Stored Procedure?
 			if (obj->GetConnection()->EdbMinimumVersion(8, 1))
@@ -786,7 +787,7 @@ pgFunction *pgFunctionFactory::AppendFunctions(pgObject *obj, pgSchema *schema, 
 						{
 							type = StrToOid(argTypesTkz.GetNextToken());
 							// this will be the return type for this object
-							function->iSetReturnType(typeCache->GetTypeName(type));
+							function->iSetReturnType(typeCache->GetDatatype(type)->FullName());
 
 							// consume uniformly, mode will definitely be "OUT"
 							mode = argModesTkz.GetNextToken();
@@ -802,7 +803,7 @@ pgFunction *pgFunctionFactory::AppendFunctions(pgObject *obj, pgSchema *schema, 
 				// Add the arg type. This is a type oid, so
 				// look it up in the hashmap
 				type = StrToOid(argTypesTkz.GetNextToken());
-				function->iAddArgType(typeCache->GetTypeName(type));
+				function->iAddArgType(typeCache->GetDatatype(type)->FullName());
 
 				// Now the mode
 				mode = argModesTkz.GetNextToken();
@@ -916,12 +917,11 @@ pgFunction *pgFunctionFactory::AppendFunctions(pgObject *obj, pgSchema *schema, 
 			// set the return type only if not already set..
 			if (function->GetReturnType().IsEmpty())
 			{
-				wxString strType = functions->GetVal(wxT("typname"));
-				if (strType.Lower() == wxT("record") && !strReturnTableArgs.IsEmpty())
+				if (typname.Lower() == wxT("record") && !strReturnTableArgs.IsEmpty())
 				{
-					strType = wxT("TABLE(") + strReturnTableArgs + wxT(")");
+					typname = wxT("TABLE(") + strReturnTableArgs + wxT(")");
 				}
-				function->iSetReturnType(strType);
+				function->iSetReturnType(typname);
 			}
 			function->iSetComment(functions->GetVal(wxT("description")));
 

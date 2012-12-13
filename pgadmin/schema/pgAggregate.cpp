@@ -16,7 +16,7 @@
 #include "pgAdmin3.h"
 #include "utils/misc.h"
 #include "schema/pgAggregate.h"
-#include "utils/pgTypeCache.h"
+#include "schema/pgDatatype.h"
 
 
 pgAggregate::pgAggregate(pgSchema *newSchema, const wxString &newName)
@@ -229,7 +229,8 @@ pgObject *pgAggregateFactory::CreateObjects(pgCollection *collection, ctlTree *b
 	pgAggregate *aggregate = 0;
 
 	// Make sure the cache of data types is loaded
-	pgTypeCache *typeCache = collection->GetConnection()->GetTypeCache();
+	pgDatatypeCache *typeCache = collection->GetConnection()->GetDatatypeCache();
+	wxASSERT(typeCache != NULL);
 
 	// Build the query to get all objects
 	wxString sql =
@@ -298,11 +299,11 @@ pgObject *pgAggregateFactory::CreateObjects(pgCollection *collection, ctlTree *b
 					// Add the arg type. This is a type oid, so
 					// look it up in the hashmap
 					OID type = StrToOid(argTypes.GetNextToken());
-					wxString name = typeCache->GetDefaultFullTypeName(type);
+					wxString name = typeCache->GetDatatype(type)->QuotedFullName();
 					if (name == wxT("any"))
 						aggregate->iAddInputType(wxT("\"any\""));
 					else
-						aggregate->iAddInputType(qtTypeIdent(name));
+						aggregate->iAddInputType(name);
 				}
 			}
 

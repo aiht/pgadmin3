@@ -16,7 +16,7 @@
 #include "pgAdmin3.h"
 #include "utils/pgfeatures.h"
 #include "schema/edbPackageFunction.h"
-#include "utils/pgTypeCache.h"
+#include "schema/pgDatatype.h"
 
 
 edbPackageFunction::edbPackageFunction(edbPackage *newPackage, const wxString &newName)
@@ -305,7 +305,8 @@ edbPackageFunction *edbPackageFunctionFactory::AppendFunctions(pgObject *obj, ed
 
 	packageFunctions = obj->GetDatabase()->ExecuteSet(sql);
 
-	pgTypeCache *typeCache = obj->GetConnection()->GetTypeCache();
+	pgDatatypeCache *typeCache = obj->GetConnection()->GetDatatypeCache();
+	wxASSERT(typeCache != NULL);
 
 	if (packageFunctions)
 	{
@@ -369,7 +370,7 @@ edbPackageFunction *edbPackageFunctionFactory::AppendFunctions(pgObject *obj, ed
 				// Add the arg type. This is a type oid, so
 				// look it up in the hashmap
 				type = argTypesTkz.GetNextToken();
-				packageFunction->iAddArgType(typeCache->GetTypeName(StrToOid(type)));
+				packageFunction->iAddArgType(typeCache->GetDatatype(StrToOid(type))->FullName());
 
 				// Now add the name, stripping the quotes if
 				// necessary.
@@ -464,7 +465,7 @@ edbPackageFunction *edbPackageFunctionFactory::AppendFunctions(pgObject *obj, ed
 
 			packageFunction->iSetOid(packageFunctions->GetOid(wxT("oid")));
 			packageFunction->iSetArgCount(packageFunctions->GetOid(wxT("nargs")));
-			packageFunction->iSetReturnType(typeCache->GetTypeName(StrToOid(packageFunctions->GetVal(wxT("eltdatatype")))));
+			packageFunction->iSetReturnType(typeCache->GetDatatype(StrToOid(packageFunctions->GetVal(wxT("eltdatatype"))))->FullName());
 
 			if (packageFunctions->GetVal(wxT("visibility")) == wxT("+"))
 				packageFunction->iSetVisibility(_("Public"));
