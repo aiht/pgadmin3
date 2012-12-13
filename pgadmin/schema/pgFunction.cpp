@@ -634,17 +634,15 @@ pgFunction *pgFunctionFactory::AppendFunctions(pgObject *obj, pgSchema *schema, 
 	cacheMap exprCache;
 
 	pgFunction *function = 0;
-	wxString argNamesCol, argDefsCol, proConfigCol, proType, seclab;
-	if (obj->GetConnection()->BackendMinimumVersion(8, 0))
-		argNamesCol = wxT("proargnames, ");
-	if (obj->GetConnection()->HasFeature(FEATURE_FUNCTION_DEFAULTS) && !obj->GetConnection()->BackendMinimumVersion(8, 4))
-		argDefsCol = wxT("proargdefvals, COALESCE(substring(array_dims(proargdefvals), E'1:(.*)\\]')::integer, 0) AS pronargdefaults, ");
+	wxString argDefsCol, seclab;
 	if (obj->GetConnection()->BackendMinimumVersion(8, 4))
-		argDefsCol = wxT("pg_get_expr(proargdefaults, 'pg_catalog.pg_class'::regclass) AS proargdefaultvals, pronargdefaults, ");
-	if (obj->GetConnection()->BackendMinimumVersion(8, 3))
-		proConfigCol = wxT("proconfig, ");
-	if (obj->GetConnection()->EdbMinimumVersion(8, 1))
-		proType = wxT("protype, ");
+	{
+		argDefsCol = wxT("pg_get_expr(proargdefaults, 'pg_catalog.pg_class'::regclass) AS proargdefaultvals, ");
+	}
+	else if (obj->GetConnection()->HasFeature(FEATURE_FUNCTION_DEFAULTS))
+	{
+		argDefsCol = wxT("COALESCE(substring(array_dims(proargdefvals), E'1:(.*)\\]')::integer, 0) AS pronargdefaults, ");
+	}
 	if (obj->GetConnection()->BackendMinimumVersion(9, 1))
 	{
 		seclab = wxT(",\n")
@@ -654,7 +652,7 @@ pgFunction *pgFunctionFactory::AppendFunctions(pgObject *obj, pgSchema *schema, 
 
 	pgSet *functions = obj->GetDatabase()->ExecuteSet(
 	                       wxT("SELECT pr.oid, pr.xmin, pr.*, lanname, ") +
-	                       argNamesCol  + argDefsCol + proConfigCol + proType +
+	                       argDefsCol +
 	                       wxT("       pg_get_userbyid(proowner) as funcowner, description") + seclab + wxT("\n")
 	                       wxT("  FROM pg_proc pr\n")
 	                       wxT("  JOIN pg_type typ ON typ.oid=prorettype\n")
