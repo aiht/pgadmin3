@@ -98,7 +98,7 @@ pgTypClass pgSet::ColTypClass(const int col) const
 	pgTypClass n = conn->GetDatatype(ColTypeOid(col))->GetTypeClass();
 	pgTypClass o = conn->GetTypeCache()->GetTypeClass(ColTypeOid(col));
 	wxASSERT(n == o);
-	return o;
+	return n;
 }
 
 
@@ -108,7 +108,7 @@ wxString pgSet::ColType(const int col) const
 	wxString n = conn->GetDatatype(ColTypeOid(col))->FullName();
 	wxString o = conn->GetTypeCache()->GetTypeName(ColTypeOid(col));
 	wxASSERT(n == o);
-	return o;
+	return n;
 }
 
 wxString pgSet::ColFullType(const int col) const
@@ -117,7 +117,7 @@ wxString pgSet::ColFullType(const int col) const
 	wxString n = conn->GetDatatype(ColTypeOid(col))->FullName(ColTypeMod(col));
 	wxString o = conn->GetTypeCache()->GetFullTypeName(ColTypeOid(col), ColTypeMod(col));
 	wxASSERT(n == o);
-	return o;
+	return n;
 }
 
 int pgSet::ColScale(const int col) const

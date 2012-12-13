@@ -379,14 +379,20 @@ void DatatypeReader::init(pgConn *conn, const wxString &condition, bool addSeria
 	wxString sql = wxT("SELECT * FROM (SELECT format_type(t.oid,NULL) AS typname, typtype, t.oid as oid, typbasetype, nspname,\n")
 	               wxT("       (SELECT COUNT(1) FROM pg_type t2 WHERE t2.typname = t.typname) > 1 AS isdup\n")
 	               wxT("  FROM pg_type t\n")
-	               wxT("  JOIN pg_namespace nsp ON typnamespace=nsp.oid\n")
-	               wxT(" WHERE ");
-	if (!allowUnknown)
+	               wxT("  JOIN pg_namespace nsp ON typnamespace=nsp.oid\n");
+	if (!allowUnknown || !condition.IsEmpty())
 	{
-		sql += wxT("(NOT (typname = 'unknown' AND nspname = 'pg_catalog')) AND ");
-	}
+		sql += wxT("  WHERE ");
+		if (!allowUnknown)
+		{
+			sql += wxT("(NOT (typname = 'unknown' AND nspname = 'pg_catalog')) ");
+		}
 
-	sql += condition + wxT("\n");
+		if (!condition.IsEmpty())
+		{
+			sql += wxT("AND ") + condition + wxT("\n");
+		}
+	}
 
 	if (addSerials)
 	{
@@ -500,7 +506,7 @@ const pgDatatype *pgDatatypeCache::GetDatatype(OID oid) const
 {
 	if (types.empty())
 	{
-		DatatypeReader dr(conn, true, false);
+		DatatypeReader dr(conn, (OID)0);
 		while (dr.HasMore())
 		{
 			pgDatatype d = dr.GetDatatype();
